@@ -1,0 +1,24 @@
+{
+  "name": "Auto-register",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "restify": "^8.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abassade/Auto-register.git"
+  },
+  "keywords": [],
+  "author": "Abass Ade",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Abassade/Auto-register/issues"
+  },
+  "homepage": "https://github.com/Abassade/Auto-register#readme"
+}
