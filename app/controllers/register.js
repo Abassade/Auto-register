@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 /* eslint-disable no-shadow */
 /* eslint-disable consistent-return */
 /* eslint-disable no-undef */
@@ -43,10 +44,19 @@ class Register {
   saveDetail(req, res) {
     this.logger.info('request', req.body);
     const { msisdn } = req.body;
+    const allPassedData = req.body;
     if (!msisdn || !req.files.IDcard || !req.files.passportPhoto) {
       return Response.failure(res, {
         error: true,
         message: 'Please msisdn and IDcard,passportPhoto must be passed!!',
+      }, httpStatus.BadRequest);
+    }
+
+    if (msisdn.toString().trim() === '') {
+      this.logger.info('msisdn must not be empty');
+      return Response.failure(res, {
+        error: true,
+        message: 'msisdn must not be empty',
       }, httpStatus.BadRequest);
     }
 
@@ -55,16 +65,45 @@ class Register {
     this.registerService.checkRedis(checkIfExists)
       .then((reply) => {
         if (reply === 1) {
-          return Response.failure(res, {
+          this.logger.info('A user with this msisdn already exists');
+          return Response.success(res, {
             message: 'A user with this msisdn already exists',
             response: [],
-          }, httpStatus.Conflict);
+          }, httpStatus.OK);
         }
         if (reply === 0) {
-          return Response.success(res, {
-            message: 'Welcome',
-            response: msisdn,
-          }, httpStatus.OK);
+          allPassedData.msisdn = msisdn;
+          this.registerService.saveToRedis(msisdn, msisdn)
+            .then((message) => {
+              upload(req, res, (err) => {
+                if (err) {
+                  res.json({ error_code: 1, err_desc: err });
+                  return;
+                }
+                /** Multer gives us file info in req.file object */
+                if (!req.files) {
+                  res.json({ error_code: 1, err_desc: 'No file passed' });
+                  return;
+                }
+
+                unirestuploader(req.files.IDcard, this)
+                  .then((data) => {
+                    allPassedData.IDcard = data;
+
+                    unirestuploader(req.files.passportPhoto, this)
+                      .then((data) => {
+                        allPassedData.passportPhoto = data;
+                        this.logger.info('All saved data', allPassedData);
+                        return Response.success(res, {
+                          message: 'Data successfully saved',
+                          response: message,
+                        }, httpStatus.OK);
+                      });
+                  }).catch((err) => {
+                    this.logger.info('error', err);
+                  });
+              });
+            });
         }
       })
       .catch((err) => {
@@ -94,30 +133,6 @@ class Register {
           });
       });
     }
-
-    upload(req, res, (err) => {
-      if (err) {
-        res.json({ error_code: 1, err_desc: err });
-        return;
-      }
-      /** Multer gives us file info in req.file object */
-      if (!req.files) {
-        res.json({ error_code: 1, err_desc: 'No file passed' });
-        return;
-      }
-
-      unirestuploader(req.files.IDcard, this)
-        .then((data) => {
-          this.logger.info(data);
-
-          unirestuploader(req.files.passportPhoto, this)
-            .then((data) => {
-              this.logger.info(data);
-            });
-        }).catch((err) => {
-          this.logger.info('error', err);
-        });
-    });
   }
 }
 module.exports = Register;

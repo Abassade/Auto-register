@@ -42,8 +42,10 @@ class Register {
      */
   saveToRedis(key, data) {
     this.logger.info('IN-COMING DATA TYPE', typeof (data));
-
-    return this.redisClient.set(key, data);
+    return new Promise((resolve) => {
+      this.redisClient.set(key, data);
+      resolve('msisdn set');
+    });
   }
 }
 module.exports = Register;
