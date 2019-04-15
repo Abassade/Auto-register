@@ -9,5 +9,8 @@ const config = {
   redisHost: process.env.REDIS_HOST,
   redisPort: process.env.REDIS_PORT,
   redisDB: process.env.REDIS_DB,
+  mongo: {
+    collection: process.env.MONGO_COLLECTION,
+  },
 };
 module.exports = config;
