@@ -52,11 +52,11 @@ class Register {
       }, httpStatus.BadRequest);
     }
 
-    if (msisdn.toString().trim() === '') {
+    if (msisdn.toString().trim() === '' || msisdn.toString().trim().length !== 11) {
       this.logger.info('msisdn must not be empty');
       return Response.failure(res, {
         error: true,
-        message: 'msisdn must not be empty',
+        message: 'msisdn must not be empty and it must be of length 11 e.g. 08084745877',
       }, httpStatus.BadRequest);
     }
 
@@ -73,7 +73,7 @@ class Register {
         }
         if (reply === 0) {
           allPassedData.msisdn = msisdn;
-          this.registerService.saveToRedis(msisdn, msisdn)
+          this.registerService.saveToRedis(msisdn, `234${msisdn}`)
             .then((message) => {
               upload(req, res, (err) => {
                 if (err) {
