@@ -67,13 +67,13 @@ class Register {
         if (reply === 1) {
           this.logger.info('A user with this msisdn already exists');
           return Response.success(res, {
-            message: 'A user with this msisdn already exists',
+            message: `A user with the msisdn ${msisdn} already exists`,
             response: [],
           }, httpStatus.OK);
         }
         if (reply === 0) {
           allPassedData.msisdn = msisdn;
-          this.registerService.saveToRedis(msisdn, `234${msisdn}`)
+          this.registerService.saveToRedis(msisdn, `+234${msisdn.substr(1)}`)
             .then((message) => {
               upload(req, res, (err) => {
                 if (err) {

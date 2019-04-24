@@ -12,4 +12,4 @@ EXPOSE 4002
 
 COPY . /usr/src/app
 
-CMD ["node", "index.js"]
+CMD ["npm", "start"]

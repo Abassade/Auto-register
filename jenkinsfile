@@ -2,7 +2,7 @@
 
 import java.util.Date
 
-def repoName = 'trivia-ms-v2'
+def repoName = 'auto-register'
 def projectName = 'global'
 
 def isMaster = env.BRANCH_NAME == 'master'
@@ -20,7 +20,7 @@ currentBuild.result = "SUCCESS"
 try {
     node {
         deleteDir()
-        env.NODEJS_HOME = "${tool 'Node 6.14.1'}"
+        env.NODEJS_HOME = "${tool 'Node 8.15.1'}"
         env.PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
 
         // Mark the code checkout 'stage'
