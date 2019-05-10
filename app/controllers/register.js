@@ -40,23 +40,40 @@ class Register {
     this.registerService = registerService;
   }
 
+  getAllRawData(req, res) {
+    this.logger.info('req body passed', req.body);
+    this.registerService.getAllDataFromDB()
+      .then(data => Response.success(res, {
+        message: 'data fetched succesfully',
+        response: data,
+      }, httpStatus.OK));
+  }
+
 
   saveDetail(req, res) {
     this.logger.info('request', req.body);
-    const { msisdn } = req.body;
+    const { msisdn, cardType } = req.body;
+    const CARD_TYPE = ['VOTER', 'NIMS'];
     const allPassedData = req.body;
-    if (!msisdn || !req.files.IDcard || !req.files.passportPhoto) {
+    if (!msisdn || !req.files.IDcard || !req.files.passportPhoto || !cardType) {
       return Response.failure(res, {
         error: true,
-        message: 'Please msisdn and IDcard,passportPhoto must be passed!!',
+        message: 'Please msisdn, cardType IDcard, and passportPhoto must be passed!!',
+      }, httpStatus.BadRequest);
+    }
+    if (cardType && !(CARD_TYPE.indexOf(cardType) > -1)) {
+      return Response.failure(res, {
+        error: true,
+        message: 'non compatible cardType passed, try one of [VOTER, NIMS]',
       }, httpStatus.BadRequest);
     }
 
-    if (msisdn.toString().trim() === '' || msisdn.toString().trim().length !== 11) {
-      this.logger.info('msisdn must not be empty');
+    if (msisdn.toString().trim() === '' || cardType.toString().trim() === ''
+     || msisdn.toString().trim().length !== 11) {
+      this.logger.info('msisdn and cardType must not be empty');
       return Response.failure(res, {
         error: true,
-        message: 'msisdn must not be empty and it must be of length 11 e.g. 08084745877',
+        message: 'msisdn must not be empty and it must be of length 11 e.g. 08084745877\n cardType is also required',
       }, httpStatus.BadRequest);
     }
 
@@ -72,8 +89,10 @@ class Register {
           }, httpStatus.OK);
         }
         if (reply === 0) {
-          allPassedData.msisdn = msisdn;
-          this.registerService.saveToRedis(msisdn, `+234${msisdn.substr(1)}`)
+          const sanitizedMsidn = `+234${msisdn.substr(1)}`;
+          allPassedData.msisdn = sanitizedMsidn;
+          allPassedData.cardType = cardType;
+          this.registerService.saveToRedis(msisdn, sanitizedMsidn)
             .then((message) => {
               upload(req, res, (err) => {
                 if (err) {
@@ -93,13 +112,48 @@ class Register {
                     unirestuploader(req.files.passportPhoto, this)
                       .then((data) => {
                         allPassedData.passportPhoto = data;
-                        this.logger.info('All saved data', allPassedData);
-                        return Response.success(res, {
-                          message: 'Data successfully saved',
-                          response: message,
-                        }, httpStatus.OK);
+                        const dataToSave = {
+                          msisdn: allPassedData.msisdn,
+                          cardType: allPassedData.cardType,
+                          IDcard: allPassedData.IDcard,
+                          passportPhoto: allPassedData.passportPhoto,
+                        };
+                        // TODO =>>> save all the raw data to a database, ensure you delete the msisdn from redis if not saved
+                        // TODO =>>> push data to queue (rabbitMQ)
+                        this.logger.info(`All saved data =>>> ${JSON.stringify(dataToSave)}`);
+                        this.registerService.saveToMongoDB(dataToSave)
+                          .then(data => Response.success(res, {
+                            message: 'Data successfully saved',
+                            response: data,
+                          }, httpStatus.OK))
+                          .catch((error) => {
+                            // delete msisdn from redis
+                            this.registerService.deleteKeyFromRedis(msisdn)
+                              .then((data) => {
+                                this.logger.info(`msisdn: ${data} deleted`);
+                              }).catch((err) => {
+                                this.logger.info('error while deleting', err);
+                              });
+                            return Response.failure(res, { error: true, message: error }, httpStatus.BadRequest);
+                          });
+                      }).catch((err) => {
+                        // TODO delete the msisdn from redis
+                        this.registerService.deleteKeyFromRedis(msisdn)
+                          .then((data) => {
+                            this.logger.info(`msisdn: ${data} deleted`);
+                          }).catch((err) => {
+                            this.logger.info('error while deleting', err);
+                          });
+                        this.logger.info('error', err);
                       });
                   }).catch((err) => {
+                    // TODO delete the msisdn from redis
+                    this.registerService.deleteKeyFromRedis(msisdn)
+                      .then((data) => {
+                        this.logger.info(`msisdn: ${data} deleted`);
+                      }).catch((err) => {
+                        this.logger.info('error while deleting', err);
+                      });
                     this.logger.info('error', err);
                   });
               });

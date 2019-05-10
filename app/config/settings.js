@@ -10,7 +10,18 @@ const config = {
   redisPort: process.env.REDIS_PORT,
   redisDB: process.env.REDIS_DB,
   mongo: {
-    collection: process.env.MONGO_COLLECTION,
+    connection: {
+      host: process.env.MONGODB_HOST,
+      username: process.env.MONGODB_USER,
+      password: process.env.MONGODB_PASSWORD,
+      port: process.env.MONGODB_PORT,
+      dbProd: process.env.MONGODB_DATABASE_NAME,
+    },
+    collections: {
+      rawData: process.env.MONGO_COLLECTION,
+    },
+    queryLimit: process.env.MONGODB_QUERY_LIMIT,
+    questionLimit: process.env.QUESTION_LIMIT,
   },
 };
 module.exports = config;

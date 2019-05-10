@@ -15,6 +15,12 @@ const routes = function routes(server, serviceLocator) {
     version: '1.0.0',
   }, (req, res) => RegisterController.getProcessedForm(req, res));
 
+  server.get({
+    path: '/data',
+    name: 'Get all raw data',
+    version: '1.0.0',
+  }, (req, res) => RegisterController.getAllRawData(req, res));
+
   server.post({
     path: '/register',
     name: 'Post msisdn, ID card, passport',

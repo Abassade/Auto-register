@@ -22,7 +22,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-
 const cors = corsMiddleware({
   preflightMaxAge: 5,
   origins: ['*'],
